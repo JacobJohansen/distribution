@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	lambdaMuxAdapter "github.com/awslabs/aws-lambda-go-api-proxy/gorillamux"
+
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/configuration"
 	dcontext "github.com/distribution/distribution/v3/context"
@@ -60,6 +62,7 @@ type App struct {
 	Config *configuration.Configuration
 
 	router           *mux.Router                    // main application router, configured with dispatchers
+	MuxLambda		 *lambdaMuxAdapter.GorillaMuxAdapter
 	driver           storagedriver.StorageDriver    // driver maintains the app global storage driver instance.
 	registry         distribution.Namespace         // registry is the primary registry backend for the app instance.
 	repoRemover      distribution.RepositoryRemover // repoRemover provides ability to delete repos
@@ -100,6 +103,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 		isCache: config.Proxy.RemoteURL != "",
 	}
 
+	app.MuxLambda = lambdaMuxAdapter.New(app.router)
 	// Register the handler dispatchers.
 	app.register(v2.RouteNameBase, func(ctx *Context, r *http.Request) http.Handler {
 		return http.HandlerFunc(apiBase)

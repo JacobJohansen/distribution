@@ -66,6 +66,9 @@ type Configuration struct {
 	// HTTP contains configuration parameters for the registry's http
 	// interface.
 	HTTP struct {
+		// AWS lambda specifies if deployment is of aws lambda function
+		AwsLambda bool `yaml:"awslambda,omitempty"`
+
 		// Addr specifies the bind address for the registry instance.
 		Addr string `yaml:"addr,omitempty"`
 

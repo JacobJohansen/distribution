@@ -15,6 +15,9 @@ import (
 
 	logrus_bugsnag "github.com/Shopify/logrus-bugsnag"
 
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+
 	logstash "github.com/bshuster-repo/logrus-logstash-hook"
 	"github.com/bugsnag/bugsnag-go"
 	"github.com/docker/go-metrics"
@@ -132,8 +135,13 @@ var ServeCmd = &cobra.Command{
 			http.Handle(path, metrics.Handler())
 		}
 
-		if err = registry.ListenAndServe(); err != nil {
-			log.Fatalln(err)
+		if config.HTTP.AwsLambda {
+			_ = registry.LambdaServe()
+		} else {
+
+			if err = registry.ListenAndServe(); err != nil {
+				log.Fatalln(err)
+			}
 		}
 	},
 }
@@ -210,6 +218,14 @@ func getCipherSuiteNames(ids []uint16) []string {
 		names[i] = tls.CipherSuiteName(id)
 	}
 	return names
+}
+
+func (registry *Registry)LambdaServe() error {
+	lambda.Start(func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		return registry.app.MuxLambda.ProxyWithContext(ctx, req)
+	})
+
+	return nil
 }
 
 // ListenAndServe runs the registry's HTTP server.
